@@ -9,13 +9,9 @@ exports.makePurchase = async (req, res) => {
 
     const customer = await Customer.findByPk(customerId);
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
-
-    if (item.quantity < quantity) {
-      return res.status(400).json({ message: 'Not enough stock available' });
-    }
-
+    
     const totalPrice = item.price * quantity;
-    item.quantity -= quantity;
+    item.quantity += quantity;
     await item.save();
 
     const purchase = await Purchase.create({
@@ -43,6 +39,32 @@ exports.makePurchase = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.updatePurchase = async (req, res) => {
+  const id = req.params.id
+  
+  const doesPurchaseExist = await Purchase.findOne({
+    where: {
+      id : id
+    }
+  })
+  if (!doesPurchaseExist) {
+    return res.status(500).json({ error : "Purchase doesn't exist!"})
+  }
+  const updatedPurchase = await Purchase.updateOne(req.body, {
+    where: {
+      id : id
+    },
+    include: [
+      { model: Customer, attributes: ['id', 'name', 'phone'] },
+      { model: Item, attributes: ['id', 'name', 'price', 'unit'] },
+    ]
+  })
+  res.status(201).json({
+    message: 'Purchase updated successfully!',
+    purchase: updatedPurchase,
+  });
+}
 
 exports.getAllPurchases = async (req, res) => {
   try {

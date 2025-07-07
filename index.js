@@ -12,6 +12,8 @@ const customerRoutes = require('./routes/customerRoutes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const shopInventoryRoutes = require('./routes/shopeInventorry');
+const expenseRoutes = require('./routes/expenseRoutes');
+const salesRoutes = require('./routes/salesRoutes');
 
 
 const app = express();
@@ -26,6 +28,8 @@ app.use(express.json()); // Parse JSON
 
 // ✅ Routes
 
+require('./config/swagger')(app)
+
 app.use('/api/items', itemRoutes);
 
 app.use('/api/customers', customerRoutes);
@@ -33,6 +37,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/shop-inventory', shopInventoryRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/sales', salesRoutes);
 
 // ✅ Sync DB
 db.sequelize.sync({ force: false })

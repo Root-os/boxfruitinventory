@@ -1,0 +1,34 @@
+const { DataTypes } = require('sequelize');
+
+module.exports = (sequelize) => {
+  const Expense = sequelize.define('Expense', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+      name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    amount: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    date: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    shopId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+  });
+
+  return Expense;
+};

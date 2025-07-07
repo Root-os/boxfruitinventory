@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     description: {
-      type: DataTypes.STRING, // ❗ corrected from FLOAT
+      type: DataTypes.STRING, 
       allowNull: true,
     },
     purchaseDate: {

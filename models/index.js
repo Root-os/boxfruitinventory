@@ -45,6 +45,32 @@ if (db.Item && db.ShopInventory) {
   db.ShopInventory.belongsTo(db.Item, { foreignKey: 'itemId' });
 }
 
+if (db.Customer && db.Sales) {
+  db.Customer.hasMany(db.Sales, { foreignKey: 'customerId' });
+  db.Sales.belongsTo(db.Customer, { foreignKey: 'customerId', as: 'customer' });
+}
+
+if (db.Item && db.Sales) {
+  db.Item.hasMany(db.Sales, { foreignKey: 'itemId' });
+  db.Sales.belongsTo(db.Item, { foreignKey: 'itemId', as: 'item' });
+}
+
+if (db.Shop && db.Sales) {
+  db.Shop.hasMany(db.Sales, { foreignKey: 'shopId' });
+  db.Sales.belongsTo(db.Shop, { foreignKey: 'shopId', as: 'shop' });
+}
+
+if (db.User && db.Sales) {
+  db.User.hasMany(db.Sales, { foreignKey: 'userId' });
+  db.Sales.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
+}
+if (db.Shop && db.Expense) {
+  db.Shop.hasMany(db.Expense, { foreignKey: 'shopId' });
+  db.Expense.belongsTo(db.Shop, { foreignKey: 'shopId', as: 'shop' });
+}
+
+
+
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
