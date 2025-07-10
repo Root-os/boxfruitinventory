@@ -68,10 +68,6 @@ exports.getAll = async (req, res) => {
           attributes: ['id', 'name']
         },
         {
-          model: Purchase,
-          attributes: ['id', 'quantity', 'purchaseDate']
-        },
-        {
           model: Item,
           attributes: ['id', 'name']
         }
@@ -87,10 +83,27 @@ exports.getAll = async (req, res) => {
 // Create shop inventory
 exports.create = async (req, res) => {
   try {
-    const { shopId, purchaseId, itemId, quantity } = req.body;
+    const { shopId, itemId, quantity } = req.body;
 
-    const record = await ShopInventory.create({ shopId, purchaseId, itemId, quantity });
-    res.status(201).json(record);
+    const doesItemExist = await ShopInventory.findOne({
+      where: {
+        itemId,
+        shopId
+      }
+    })
+    if (doesItemExist) {
+      doesItemExist.quantity += quantity;
+      await doesItemExist.save();
+      res.status(201).json({
+        message: 'Purchase created! item quantity updated successfully!',
+        purchase: doesItemExist,
+      });
+      
+    } else {
+      const record = await ShopInventory.create({ shopId, itemId, quantity });
+      res.status(201).json(record);
+    }
+    
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

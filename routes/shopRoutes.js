@@ -36,7 +36,7 @@ const shopController = require('../controllers/shopController');
 
 /**
  * @swagger
- * /shops:
+ * /api/shops:
  *   get:
  *     summary: Retrieve a list of all shops
  *     tags: [Shops]
@@ -54,7 +54,7 @@ router.get('/', shopController.getAllShops);
 
 /**
  * @swagger
- * /shops/{id}:
+ * /api/shops/{id}:
  *   get:
  *     summary: Get a shop by ID
  *     tags: [Shops]
@@ -79,7 +79,7 @@ router.get('/:id', shopController.getShopById);
 
 /**
  * @swagger
- * /shops:
+ * /api/shops:
  *   post:
  *     summary: Create a new shop
  *     tags: [Shops]
@@ -114,7 +114,7 @@ router.post('/', shopController.createShop);
 
 /**
  * @swagger
- * /shops/{id}:
+ * /api/shops/{id}:
  *   put:
  *     summary: Update a shop by ID
  *     tags: [Shops]
@@ -155,7 +155,7 @@ router.put('/:id', shopController.updateShop);
 
 /**
  * @swagger
- * /shops/{id}:
+ * /api/shops/{id}:
  *   delete:
  *     summary: Delete a shop by ID
  *     tags: [Shops]
@@ -173,5 +173,7 @@ router.put('/:id', shopController.updateShop);
  *         description: Shop not found
  */
 router.delete('/:id', shopController.deleteShop);
+
+router.get('/user/:id', shopController.getShopsByOwnerId);
 
 module.exports = router;

@@ -26,8 +26,8 @@ if (db.Customer && db.Item && db.Purchase) {
   db.Customer.hasMany(db.Purchase, { foreignKey: 'customerId' });
   db.Purchase.belongsTo(db.Customer, { foreignKey: 'customerId' });
 
-  db.Item.hasMany(db.Purchase, { foreignKey: 'itemId' });
-  db.Purchase.belongsTo(db.Item, { foreignKey: 'itemId' });
+  // db.Item.hasMany(db.Purchase, { foreignKey: 'itemId' });
+  // db.Purchase.belongsTo(db.Item, { foreignKey: 'itemId' });
 }
 
 if (db.Shop && db.ShopInventory) {
@@ -35,10 +35,10 @@ if (db.Shop && db.ShopInventory) {
   db.ShopInventory.belongsTo(db.Shop, { foreignKey: 'shopId' });
 }
 
-if (db.Purchase && db.ShopInventory) {
-  db.Purchase.hasMany(db.ShopInventory, { foreignKey: 'purchaseId' });
-  db.ShopInventory.belongsTo(db.Purchase, { foreignKey: 'purchaseId' });
-}
+// if (db.Purchase && db.ShopInventory) {
+//   db.Purchase.hasMany(db.ShopInventory, { foreignKey: 'purchaseId' });
+//   db.ShopInventory.belongsTo(db.Purchase, { foreignKey: 'purchaseId' });
+// }
 
 if (db.Item && db.ShopInventory) {
   db.Item.hasMany(db.ShopInventory, { foreignKey: 'itemId' });
@@ -50,10 +50,10 @@ if (db.Customer && db.Sales) {
   db.Sales.belongsTo(db.Customer, { foreignKey: 'customerId', as: 'customer' });
 }
 
-if (db.Item && db.Sales) {
-  db.Item.hasMany(db.Sales, { foreignKey: 'itemId' });
-  db.Sales.belongsTo(db.Item, { foreignKey: 'itemId', as: 'item' });
-}
+// if (db.Item && db.Sales) {
+//   db.Item.hasMany(db.Sales, { foreignKey: 'itemId' });
+//   db.Sales.belongsTo(db.Item, { foreignKey: 'itemId', as: 'item' });
+// }
 
 if (db.Shop && db.Sales) {
   db.Shop.hasMany(db.Sales, { foreignKey: 'shopId' });
@@ -67,6 +67,12 @@ if (db.User && db.Sales) {
 if (db.Shop && db.Expense) {
   db.Shop.hasMany(db.Expense, { foreignKey: 'shopId' });
   db.Expense.belongsTo(db.Shop, { foreignKey: 'shopId', as: 'shop' });
+}
+if (db.Damage && db.Item && db.Shop) {
+  db.Item.hasMany(db.Damage, { foreignKey: 'itemId' });
+  db.Damage.belongsTo(db.Item, { foreignKey: 'itemId', as: 'item' });
+  db.Shop.hasMany(db.Damage, { foreignKey: 'shopId' });
+  db.Damage.belongsTo(db.Shop, { foreignKey: 'shopId', as: 'shop' });
 }
 
 

@@ -55,7 +55,7 @@ const itemController = require('../controllers/itemController');
 
 /**
  * @swagger
- * /items:
+ * /api/items:
  *   get:
  *     summary: Get all items
  *     tags: [Items]
@@ -73,7 +73,7 @@ router.get('/', itemController.getAllItems);
 
 /**
  * @swagger
- * /items/{id}:
+ * /api/items/{id}:
  *   get:
  *     summary: Get an item by ID
  *     tags: [Items]
@@ -98,7 +98,7 @@ router.get('/:id', itemController.getItemById);
 
 /**
  * @swagger
- * /items:
+ * /api/items:
  *   post:
  *     summary: Create a new item
  *     tags: [Items]
@@ -148,7 +148,7 @@ router.post('/', itemController.createItem);
 
 /**
  * @swagger
- * /items/{id}:
+ * /api/items/{id}:
  *   put:
  *     summary: Update an item by ID
  *     tags: [Items]
@@ -202,7 +202,7 @@ router.put('/:id', itemController.updateItem);
 
 /**
  * @swagger
- * /items/{id}:
+ * /api/items/{id}:
  *   delete:
  *     summary: Delete an item by ID
  *     tags: [Items]
@@ -220,5 +220,37 @@ router.put('/:id', itemController.updateItem);
  *         description: Item not found
  */
 router.delete('/:id', itemController.deleteItem);
+/**
+ * @swagger
+ * /api/items/getItemByName:
+ *   get:
+ *     summary: Get an item by name
+ *     tags: [Items]
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Name of the item to retrieve
+ *     responses:
+ *       200:
+ *         description: Item retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 unit:
+ *                   type: string
+ *       404:
+ *         description: Item not found
+ */
+router.get('/getItemByName', itemController.getItemByName);
+
 
 module.exports = router;

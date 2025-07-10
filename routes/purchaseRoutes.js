@@ -68,7 +68,7 @@ const purchaseController = require('../controllers/purchaseController');
 
 /**
  * @swagger
- * /purchases:
+ * /api/purchases:
  *   post:
  *     summary: Create a new purchase
  *     tags: [Purchases]
@@ -129,7 +129,7 @@ router.post('/', purchaseController.makePurchase);
 
 /**
  * @swagger
- * /purchases:
+ * /api/purchases:
  *   get:
  *     summary: Get all purchases
  *     tags: [Purchases]

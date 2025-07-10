@@ -53,7 +53,7 @@ const salesController = require('../controllers/salesController');
 
 /**
  * @swagger
- * /sales:
+ * /api/sales:
  *   post:
  *     summary: Create a new sale
  *     tags: [Sales]
@@ -102,7 +102,7 @@ router.post('/', salesController.createSale);
 
 /**
  * @swagger
- * /sales:
+ * /api/sales:
  *   get:
  *     summary: Get all sales
  *     tags: [Sales]
@@ -120,7 +120,7 @@ router.get('/', salesController.getAllSales);
 
 /**
  * @swagger
- * /sales/{id}:
+ * /api/sales/{id}:
  *   get:
  *     summary: Get a sale by ID
  *     tags: [Sales]
@@ -145,7 +145,7 @@ router.get('/:id', salesController.getSaleById);
 
 /**
  * @swagger
- * /sales/{id}:
+ * /api/sales/{id}:
  *   put:
  *     summary: Update a sale by ID
  *     tags: [Sales]
@@ -197,7 +197,7 @@ router.put('/:id', salesController.updateSale);
 
 /**
  * @swagger
- * /sales/{id}:
+ * /api/sales/{id}:
  *   delete:
  *     summary: Delete a sale by ID
  *     tags: [Sales]

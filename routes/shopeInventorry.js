@@ -43,10 +43,9 @@ const controller = require('../controllers/shopInventoryController');
  *   name: ShopInventory
  *   description: Shop inventory management endpoints
  */
-
 /**
  * @swagger
- * /shop-inventory:
+ * /api/shop-inventory:
  *   post:
  *     summary: Create a new shop inventory entry
  *     tags: [ShopInventory]
@@ -70,7 +69,7 @@ shopInventoryRoutes.post('/', controller.create);
 
 /**
  * @swagger
- * /shop-inventory:
+ * /api/shop-inventory:
  *   get:
  *     summary: Get all shop inventory entries
  *     tags: [ShopInventory]
@@ -88,7 +87,7 @@ shopInventoryRoutes.get('/', controller.getAll);
 
 /**
  * @swagger
- * /shop-inventory/shop/{shopId}:
+ * /api/shop-inventory/shop/{shopId}:
  *   get:
  *     summary: Get inventory entries by shop ID
  *     tags: [ShopInventory]
@@ -115,7 +114,7 @@ shopInventoryRoutes.get('/shop/:shopId', controller.getByShop);
 
 /**
  * @swagger
- * /shop-inventory/{id}:
+ * /api/shop-inventory/{id}:
  *   delete:
  *     summary: Delete a shop inventory entry by ID
  *     tags: [ShopInventory]
@@ -136,7 +135,7 @@ shopInventoryRoutes.delete('/:id', controller.delete);
 
 /**
  * @swagger
- * /shop-inventory/shop/count/{shopId}:
+ * /api/shop-inventory/shop/count/{shopId}:
  *   get:
  *     summary: Get stock count by shop ID
  *     tags: [ShopInventory]
@@ -169,7 +168,7 @@ shopInventoryRoutes.get('/shop/count/:shopId', controller.getStockByShop);
 
 /**
  * @swagger
- * /shop-inventory/transfer:
+ * /api/shop-inventory/transfer:
  *   post:
  *     summary: Transfer inventory between shops
  *     tags: [ShopInventory]

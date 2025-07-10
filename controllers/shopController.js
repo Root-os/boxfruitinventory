@@ -58,3 +58,14 @@ exports.deleteShop = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getShopsByOwnerId = async (req, res) => {
+  try {
+    // ** when auth middleware is setupped we will fetch the it by the user id 
+    const id = req.params.id
+    const shops = await Shop.findAll({ where: { salesmanId: id }, include : { model: User, as: 'salesman' } });
+    res.status(200).json(shops);
+  } catch (error) {
+    
+  }
+}

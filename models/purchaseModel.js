@@ -1,4 +1,6 @@
-module.exports = (sequelize, DataTypes) => {
+const { DataTypes } = require("sequelize");
+
+module.exports = (sequelize) => {
   const Purchase = sequelize.define('Purchase', {
     id: {
       type: DataTypes.INTEGER,
@@ -7,11 +9,37 @@ module.exports = (sequelize, DataTypes) => {
     },
     customerId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
+      references: {
+        model: 'Customers', // foreign key to customer is fine
+        key: 'id',
+      },
+      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE',
     },
-    itemId: {
-      type: DataTypes.INTEGER,
+    items: {
+      type: DataTypes.JSON, // ✅ JSON okay in MySQL
       allowNull: false,
+      validate: {
+        isValidItemArray(value) {
+          if (!Array.isArray(value)) {
+            throw new Error('itemId must be an array of objects');
+          }
+
+          for (const item of value) {
+            if (
+              typeof item !== 'object' ||
+              typeof item.itemId !== 'number' ||
+              typeof item.quantity !== 'number'||
+              typeof item.price !== 'number'
+            ) {
+              throw new Error(
+                'Each item must have a string "itemId" and a number "quantity"'
+              );
+            }
+          }
+        },
+      },
     },
     quantity: {
       type: DataTypes.INTEGER,
@@ -24,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: false,
     },
-     unit: {
+    unit: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -33,14 +61,14 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     description: {
-      type: DataTypes.STRING, 
+      type: DataTypes.STRING,
       allowNull: true,
     },
     purchaseDate: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
-    }
+    },
   });
 
   return Purchase;
