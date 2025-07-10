@@ -1,7 +1,6 @@
-const { User } = require('../models');
+const { User, Shop } = require('../models');
 const { generateToken, hashPassword, comparePassword, deleteObject } = require('../utils/auth');
 
-// Get all users
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll();
@@ -11,7 +10,7 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Get user by ID
+
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
@@ -74,12 +73,17 @@ exports.loginUser = async (req, res) => {
     if (!doesUserExist) return res.status(404).json({ message: 'User not found' });
     const isPasswordCorrect = await comparePassword(password, doesUserExist.password);
     if (!isPasswordCorrect) return res.status(401).json({ message: 'Invalid credentials' });
-    const token = generateToken({ id: doesUserExist.id, role: doesUserExist.role });
+    let shopId = null
+    if (doesUserExist.role === 'salesman') {
+        shopId = await Shop.findOne({ where: { salesmanId: doesUserExist.id }, attributes: ['id'] });
+    }
+    const token = generateToken({ id: doesUserExist.id, role: doesUserExist.role, fullName : doesUserExist.fullName,shopId });
     res.json({ 
       ...deleteObject(doesUserExist, { password }),
+      shopId,
       token
      });
   } catch (error) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: error.message });
   }
 }

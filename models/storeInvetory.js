@@ -16,6 +16,12 @@ module.exports = (sequelize, DataTypes) => {
     quantity: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    minStockQuantity: {
+      type: DataTypes.INTEGER,
+      valdiate: {
+        min : 1
+      }
     }
   });
 
