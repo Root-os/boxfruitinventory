@@ -9,10 +9,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    purchaseId: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
     itemId: {
       type: DataTypes.INTEGER,
       allowNull: false
@@ -20,8 +16,13 @@ module.exports = (sequelize, DataTypes) => {
     quantity: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    minStockQuantity: {
+      type: DataTypes.INTEGER,
+      valdiate: {
+        min : 1
+      }
     }
   });
-
   return ShopInventory;
 };

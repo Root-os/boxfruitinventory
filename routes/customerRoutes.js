@@ -45,7 +45,7 @@ const customerController = require('../controllers/customerController');
 
 /**
  * @swagger
- * /customers:
+ * /api/customers:
  *   get:
  *     summary: Get all customers
  *     tags: [Customers]
@@ -63,7 +63,7 @@ router.get('/', customerController.getAllCustomers);
 
 /**
  * @swagger
- * /customers/{id}:
+ * /api/customers/{id}:
  *   get:
  *     summary: Get a customer by ID
  *     tags: [Customers]
@@ -88,7 +88,7 @@ router.get('/:id', customerController.getCustomerById);
 
 /**
  * @swagger
- * /customers:
+ * /api/customers:
  *   post:
  *     summary: Create a new customer
  *     tags: [Customers]
@@ -130,7 +130,7 @@ router.post('/', customerController.createCustomer);
 
 /**
  * @swagger
- * /customers/{id}:
+ * /api/customers/{id}:
  *   put:
  *     summary: Update a customer by ID
  *     tags: [Customers]
@@ -178,7 +178,7 @@ router.put('/:id', customerController.updateCustomer);
 
 /**
  * @swagger
- * /customers/{id}:
+ * /api/customers/{id}:
  *   delete:
  *     summary: Delete a customer by ID
  *     tags: [Customers]

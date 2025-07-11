@@ -52,7 +52,7 @@ const expenseController = require('../controllers/expenseController');
 
 /**
  * @swagger
- * /expenses:
+ * /api/expenses:
  *   post:
  *     summary: Create a new expense
  *     tags: [Expenses]
@@ -100,7 +100,7 @@ router.post('/', expenseController.createExpense);
 
 /**
  * @swagger
- * /expenses:
+ * /api/expenses:
  *   get:
  *     summary: Get all expenses
  *     tags: [Expenses]
@@ -118,7 +118,7 @@ router.get('/', expenseController.getAllExpenses);
 
 /**
  * @swagger
- * /expenses/{id}:
+ * /api/expenses/{id}:
  *   get:
  *     summary: Get an expense by ID
  *     tags: [Expenses]
@@ -143,7 +143,7 @@ router.get('/:id', expenseController.getExpenseById);
 
 /**
  * @swagger
- * /expenses/{id}:
+ * /api/expenses/{id}:
  *   put:
  *     summary: Update an expense by ID
  *     tags: [Expenses]
@@ -194,7 +194,7 @@ router.put('/:id', expenseController.updateExpense);
 
 /**
  * @swagger
- * /expenses/{id}:
+ * /api/expenses/{id}:
  *   delete:
  *     summary: Delete an expense by ID
  *     tags: [Expenses]

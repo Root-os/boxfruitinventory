@@ -1,22 +1,37 @@
-const { DataTypes } = require('sequelize');
-
-module.exports = (sequelize) => {
-  const Sales = sequelize.define('Sales', {
+module.exports = (sequlize, DataTypes) => {
+  const Sales = sequlize.define('Sales', {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-      customerId: {
+    customerId: {
       type: DataTypes.INTEGER,
-    allowNull: false,
+      allowNull: true,
     },
-    itemId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    amount: {
+    customerName: {
       type: DataTypes.STRING,
+      allowNull:true
+    },
+    items: {
+      type: DataTypes.JSON,
+      validate: {
+        isValidItemArray (value) {
+          if (!Array.isArray(value)) {
+            throw new Error('itemId must be an array of objects');
+          }
+          for (const item of value) {
+            if (typeof item !== 'object' || typeof item.itemId !== 'number' || typeof item.quantity !== 'number' || typeof item.price !== 'number') {
+              throw new Error(
+                'Each item must have a number "itemId" and a number "quantity"'
+              );
+            }
+          }
+        }
+      }
+    },
+    quantity: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     price: {

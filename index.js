@@ -1,3 +1,4 @@
+const mysql = require('mysql2/promise');
 const express = require('express');
 require('dotenv').config();
 const helmet = require('helmet');
@@ -5,52 +6,56 @@ const cors = require('cors');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
-const db = require('./models');
-const userRoutes = require('./routes/userRoutes');
-const shopRoutes = require('./routes/shopRoutes');
-const customerRoutes = require('./routes/customerRoutes');
-const purchaseRoutes = require('./routes/purchaseRoutes');
-const itemRoutes = require('./routes/itemRoutes');
-const shopInventoryRoutes = require('./routes/shopeInventorry');
-const expenseRoutes = require('./routes/expenseRoutes');
-const salesRoutes = require('./routes/salesRoutes');
-
-
 const app = express();
 
-// ✅ Middlewares
-app.use(helmet()); // Security headers
-app.use(cors({ origin: '*', credentials: true })); // Adjust origin as needed
-app.use(compression()); // Gzip compression
-app.use(express.json()); // Parse JSON
+// ✅ Create DB if not exists
+(async () => {
+  try {
+    const connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || ''
+    });
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\`;`);
+    console.log(`✅ Database "${process.env.DB_NAME}" ensured.`);
+    await connection.end();
 
+    // ✅ Now import Sequelize models AFTER DB is ensured
+    const db = require('./models');
 
+    // ✅ Middlewares
+    app.use(helmet());
+    app.use(cors({ origin: '*', credentials: true }));
+    app.use(compression());
+    app.use(express.json());
 
-// ✅ Routes
+    // ✅ Routes
+    require('./config/swagger')(app);
+    app.use('/api/items', require('./routes/itemRoutes'));
+    app.use('/api/customers', require('./routes/customerRoutes'));
+    app.use('/api/users', require('./routes/userRoutes'));
+    app.use('/api/shops', require('./routes/shopRoutes'));
+    app.use('/api/purchases', require('./routes/purchaseRoutes'));
+    app.use('/api/shop-inventory', require('./routes/shopeInventorry'));
+    app.use('/api/expenses', require('./routes/expenseRoutes'));
+    app.use('/api/sales', require('./routes/salesRoutes'));
+    app.use('/api/damages', require('./routes/damageRoutes'));
 
-require('./config/swagger')(app)
+    // ✅ Sync Sequelize models
+    db.sequelize.sync({ force : false }).then(() => {
+      console.log('Database synced successfully.');
+    }).catch((err) => {
+      console.error('DB sync error:', err);
+    });
 
-app.use('/api/items', itemRoutes);
+    // ✅ Start server
+    const PORT = process.env.PORT || 3006;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
 
-app.use('/api/customers', customerRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/shops', shopRoutes);
-app.use('/api/purchases', purchaseRoutes);
-app.use('/api/shop-inventory', shopInventoryRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/sales', salesRoutes);
-
-// ✅ Sync DB
-db.sequelize.sync({ force: false })
-  .then(() => {
-    console.log('Database synced successfully.');
-  })
-  .catch((err) => {
-    console.error('DB sync error:', err);
-  });
-
-// ✅ Start server
-const PORT=process.env.PORT|| 3006;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+  } catch (err) {
+    console.error('❌ Error ensuring database:', err);
+    process.exit(1);
+  }
+})();

@@ -53,3 +53,13 @@ exports.deleteItem = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getItemByName = async (req, res) => {
+  try {
+    const { name } = req.query;
+    const item = await Item.findOne({ where: { name } });
+    res.json(item ? item : null);
+  } catch (error) {
+    res.status(500).json({ error: err.message });
+  }
+}

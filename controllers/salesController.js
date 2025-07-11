@@ -1,78 +1,129 @@
 const { Sales, Customer, Item, Shop, User, ShopInventory } = require('../models');
 
-// Create a new sale
 exports.createSale = async (req, res) => {
   try {
-    const { customerId, itemId, amount, price, unpaid, shopId, userId } = req.body;
-    const quantity = parseInt(amount);
+    const { customerId, items, unpaid, shopId, userId, customerName } = req.body;
 
-    const customer = await Customer.findByPk(customerId);
-    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    let totalPrice = 0;
+    let totalItems = 0;
 
-    const item = await Item.findByPk(itemId);
-    if (!item) return res.status(404).json({ message: 'Item not found' });
+    
+    for (const item of items) {
+      const { itemId, quantity: itemQty, price: itemPrice } = item;
 
-    const shopInventory = await ShopInventory.findOne({
-      where: { itemId, shopId }
-    });
+      const doesItemExist = await Item.findByPk(itemId);
+      if (!doesItemExist) return res.status(404).json({ message: 'Item not found' });
 
-    if (!shopInventory || shopInventory.quantity < quantity) {
-      return res.status(400).json({ message: 'Not enough stock in shop inventory' });
+      const shopInventory = await ShopInventory.findOne({ where: { itemId, shopId } });
+
+
+      if (!shopInventory || shopInventory.quantity < itemQty) {
+        return res.status(400).json({ message: 'Not enough stock in shop inventory' });
+      }
+
+      totalPrice += itemPrice * itemQty;
+      shopInventory.quantity -= itemQty;
+      await shopInventory.save();
+      totalItems += 1
     }
 
-    // Reduce stock from shop
-    shopInventory.quantity -= quantity;
-    await shopInventory.save();
-
+    
     const sale = await Sales.create({
       customerId,
-      itemId,
-      amount,
-      price,
+      items,
+      quantity : totalItems,
+      price: totalPrice,
+      customerName,
       unpaid,
       shopId,
       userId,
     });
 
-    const fullSale = await Sales.findByPk(sale.id, {
-      include: [
-        { model: Customer, as: 'customer', attributes: ['id', 'name'] },
-        { model: Item, as: 'item', attributes: ['id', 'name', 'unit'] },
-        { model: Shop, as: 'shop', attributes: ['id', 'name'] },
-        { model: User, as: 'user', attributes: ['id', 'fullName', 'username'] },
-      ],
-    });
+    
+    const [customer, shop, user] = await Promise.all([
+      Customer.findByPk(customerId, { attributes: ['id', 'name'] }),
+      Shop.findByPk(shopId, { attributes: ['id', 'name'] }),
+      User.findByPk(userId, { attributes: ['id', 'fullName', 'username'] }),
+    ]);
+
+    
+    const enrichedItems = await Promise.all(
+      sale.items.map(async (item) => {
+        const itemDetails = await Item.findByPk(item.itemId, {
+          attributes: ['id', 'name', 'unit'],
+        });
+        return {
+          ...item,
+          itemDetails,
+        };
+      })
+    );
 
     res.status(201).json({
       message: 'Sale recorded successfully',
-      sale: fullSale,
+      sale: {
+        id: sale.id,
+        customer,
+        shop,
+        user,
+        quantity: sale.quantity,
+        price: sale.price,
+        unpaid: sale.unpaid,
+        items: enrichedItems,
+        createdAt: sale.createdAt,
+      },
     });
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get all sales
+
+
 exports.getAllSales = async (req, res) => {
   try {
     const sales = await Sales.findAll({
       include: [
         { model: Customer, as: 'customer', attributes: ['id', 'name'] },
-        { model: Item, as: 'item', attributes: ['id', 'name', 'unit'] },
         { model: Shop, as: 'shop', attributes: ['id', 'name'] },
         { model: User, as: 'user', attributes: ['id', 'fullName'] },
       ],
       order: [['createdAt', 'DESC']],
     });
 
-    res.json(sales);
+    const enrichedSales = await Promise.all(
+      sales.map(async (sale) => {
+        const parsedItem = JSON.parse(sale.items || '[]');
+        const enrichedItem = await Promise.all(
+          parsedItem.map(async (item) => {
+            const itemDetails = await Item.findByPk(item.itemId, {
+              attributes: ['id', 'name', 'unit'],
+            });
+            return {
+              ...item,
+              name: itemDetails?.name || null,
+              unit: itemDetails?.unit || null,
+            };
+          })
+        )
+        const plainSale = sale.get({ plain: true })
+        return {
+          ...plainSale,
+          items: enrichedItem
+        }
+      })
+    )
+
+
+    res.json(enrichedSales);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get one sale by ID
+
 exports.getSaleById = async (req, res) => {
   try {
     const sale = await Sales.findByPk(req.params.id, {
@@ -91,7 +142,7 @@ exports.getSaleById = async (req, res) => {
   }
 };
 
-// Update sale
+
 exports.updateSale = async (req, res) => {
   try {
     const sale = await Sales.findByPk(req.params.id);
@@ -104,7 +155,7 @@ exports.updateSale = async (req, res) => {
   }
 };
 
-// Delete sale
+
 exports.deleteSale = async (req, res) => {
   try {
     const sale = await Sales.findByPk(req.params.id);

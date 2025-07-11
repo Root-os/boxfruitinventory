@@ -1,34 +1,42 @@
 const { ShopInventory, Purchase, Item, Shop } = require('../models');
-const { Op } = require('sequelize');
 // Transfer purchased item to a shop (and deduct from purchase)
 exports.transferToShop = async (req, res) => {
   try {
-    const { shopId, purchaseId, itemId, quantity } = req.body;
-
-    // Fetch purchase record
-    const purchase = await Purchase.findByPk(purchaseId);
-
-    if (!purchase || purchase.itemId !== itemId) {
-      return res.status(400).json({ message: 'Invalid purchase or item ID' });
-    }
-
-    if (purchase.quantity < quantity) {
-      return res.status(400).json({ message: 'Not enough quantity in purchase to transfer' });
-    }
-
-    // Deduct quantity from purchase
-    purchase.quantity -= quantity;
-    await purchase.save();
-
-    // Create shop inventory
-    const record = await ShopInventory.create({
-      shopId,
-      purchaseId,
-      itemId,
-      quantity
+    const { donatorShopId, recieverShopId, itemId, quantity } = req.body;
+    
+    const doesDonaterShopExistInInventory = await ShopInventory.findOne({
+      where: {
+        shopId : donatorShopId,
+        itemId
+      }
     });
 
-    res.status(201).json({ message: 'Transferred successfully', data: record });
+    if (!doesDonaterShopExistInInventory) {
+      return res.status(404).json({ message: 'Donator Shop inventory does not found' });
+    }
+
+    if(doesDonaterShopExistInInventory.quantity < quantity) {
+      return res.status(400).json({ message: 'Not enough stock in shop inventory' });
+    }
+
+    doesDonaterShopExistInInventory.quantity -= quantity;
+    await doesDonaterShopExistInInventory.save();
+
+    const doesRecevierShopExistInInventory = await ShopInventory.findOne({
+      where: {
+        shopId : recieverShopId,
+        itemId
+      }
+    });
+
+    if(!doesRecevierShopExistInInventory) {
+      return res.status(404).json({ message: 'Receiver Shop inventory does not found' });
+    }
+
+    doesRecevierShopExistInInventory.quantity += quantity;
+    await doesRecevierShopExistInInventory.save();    
+
+    res.status(201).json({ message: 'Transferred successfully', data : doesRecevierShopExistInInventory });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -68,10 +76,6 @@ exports.getAll = async (req, res) => {
           attributes: ['id', 'name']
         },
         {
-          model: Purchase,
-          attributes: ['id', 'quantity', 'purchaseDate']
-        },
-        {
           model: Item,
           attributes: ['id', 'name']
         }
@@ -87,16 +91,31 @@ exports.getAll = async (req, res) => {
 // Create shop inventory
 exports.create = async (req, res) => {
   try {
-    const { shopId, purchaseId, itemId, quantity } = req.body;
+    const { shopId, itemId, quantity } = req.body;
 
-    const record = await ShopInventory.create({ shopId, purchaseId, itemId, quantity });
-    res.status(201).json(record);
+    const doesItemExist = await ShopInventory.findOne({
+      where: {
+        itemId,
+        shopId
+      }
+    })
+    if (doesItemExist) {
+      doesItemExist.quantity += quantity;
+      await doesItemExist.save();
+      res.status(201).json({
+        message: 'Purchase created! item quantity updated successfully!',
+        purchase: doesItemExist,
+      });
+      
+    } else {
+      const record = await ShopInventory.create({ shopId, itemId, quantity });
+      res.status(201).json(record);
+    }
+    
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
-
 
 // Get inventory by shop ID
 exports.getByShop = async (req, res) => {
