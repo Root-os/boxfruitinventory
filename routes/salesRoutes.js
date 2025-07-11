@@ -216,4 +216,6 @@ router.put('/:id', salesController.updateSale);
  */
 router.delete('/:id', salesController.deleteSale);
 
+router.get('/report/sale-report', salesController.salesReport)
+
 module.exports = router;

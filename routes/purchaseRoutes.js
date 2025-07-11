@@ -190,4 +190,6 @@ router.put('/:id', purchaseController.updatePurchase);
  */
 router.delete('/:id', purchaseController.deletePurcahse);
 
+router.get('/report', purchaseController.purchaseReport)
+
 module.exports = router;

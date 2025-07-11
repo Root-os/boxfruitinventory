@@ -1,4 +1,4 @@
-const { Shop, User } = require('../models');
+const { Shop, User,Item ,Sales } = require('../models');;
 
 // Get all shops
 exports.getAllShops = async (req, res) => {
@@ -68,4 +68,78 @@ exports.getShopsByOwnerId = async (req, res) => {
   } catch (error) {
     
   }
-}
+};
+exports.profitLossReport = async (req, res) => {
+  const { startDate, endDate, groupBy } = req.query;
+
+  try {
+    const where = {};
+    if (startDate && endDate) {
+      where.createdAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
+
+    const sales = await Sales.findAll({ where });
+
+    const report = {};
+
+    for (const sale of sales) {
+      const parsedItems = JSON.parse(sale.items || '[]');
+
+      for (const item of parsedItems) {
+        const itemDetails = await Item.findByPk(item.itemId);
+
+        if (!itemDetails) continue;
+
+        const costPrice = itemDetails.price;
+        const saleRevenue = item.price * item.quantity;
+        const itemCost = costPrice * item.quantity;
+        const profit = saleRevenue - itemCost;
+
+        let groupKey = 'company';
+        if (groupBy === 'shop') groupKey = sale.shopId;
+        else if (groupBy === 'item') groupKey = item.itemId;
+
+        if (!report[groupKey]) {
+          report[groupKey] = {
+            revenue: 0,
+            cost: 0,
+            profit: 0,
+            items: [],
+          };
+        }
+
+        report[groupKey].revenue += saleRevenue;
+        report[groupKey].cost += itemCost;
+        report[groupKey].profit += profit;
+
+        const existingItem = report[groupKey].items.find(i => i.itemId === item.itemId);
+
+        if (existingItem) {
+          existingItem.quantity += item.quantity;
+          existingItem.revenue += saleRevenue;
+          existingItem.cost += itemCost;
+          existingItem.profit += profit;
+        } else {
+          report[groupKey].items.push({
+            itemId: item.itemId,
+            itemName: itemDetails.name,
+            quantity: item.quantity,
+            revenue: saleRevenue,
+            cost: itemCost,
+            profit,
+          });
+        }
+      }
+    }
+
+    res.status(200).json(report);
+  } catch (error) {
+    console.error('Profit & Loss Report Error:', error);
+    res.status(500).json({ error: 'Failed to generate profit & loss report' });
+  }
+};
+
+
+

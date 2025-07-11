@@ -1,5 +1,6 @@
+const { Op } = require('sequelize');
 const { ShopInventory, Purchase, Item, Shop } = require('../models');
-// Transfer purchased item to a shop (and deduct from purchase)
+
 exports.transferToShop = async (req, res) => {
   try {
     const { donatorShopId, recieverShopId, itemId, quantity } = req.body;
@@ -42,7 +43,7 @@ exports.transferToShop = async (req, res) => {
   }
 };
 
-// Get minimal stock list by shop
+
 exports.getStockByShop = async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -65,7 +66,7 @@ exports.getStockByShop = async (req, res) => {
   }
 };
 
-// Get all distributed inventory with minimal info
+
 exports.getAll = async (req, res) => {
   try {
     const records = await ShopInventory.findAll({
@@ -88,7 +89,7 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// Create shop inventory
+
 exports.create = async (req, res) => {
   try {
     const { shopId, itemId, quantity } = req.body;
@@ -117,7 +118,7 @@ exports.create = async (req, res) => {
   }
 };
 
-// Get inventory by shop ID
+
 exports.getByShop = async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -131,7 +132,7 @@ exports.getByShop = async (req, res) => {
   }
 };
 
-// Delete inventory assignment
+
 exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
@@ -142,5 +143,70 @@ exports.delete = async (req, res) => {
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+
+
+exports.stockReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+
+    let dateFilter = {};
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.createdAt = { [Op.between]: [start, end] };
+    }
+
+    const inventories = await ShopInventory.findAll({
+      where : dateFilter,
+      include: [
+        {
+          model: Item,
+          attributes: ['name', 'unit'],
+        },
+      ],
+    });
+
+    const currentStock = {};
+    const lowStockAlerts = [];
+
+    for (const inv of inventories) {
+      const { shopId, itemId, quantity, minStockQuantity, Item: itemDetails } = inv;
+
+      const itemName = itemDetails?.name || `Item #${itemId}`;
+      const unit = itemDetails?.unit || null;
+
+      // Add to current stock grouped by shopId
+      if (!currentStock[shopId]) currentStock[shopId] = [];
+
+      currentStock[shopId].push({
+        itemId,
+        itemName,
+        unit,
+        quantity,
+      });
+
+      // Add to low stock if quantity <= minStockQuantity
+      if (minStockQuantity != null && quantity <= minStockQuantity) {
+        lowStockAlerts.push({
+          shopId,
+          itemId,
+          itemName,
+          quantity,
+          minStockQuantity,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      currentStock,      // grouped by shopId
+      lowStockAlerts,    // flat list of items at or below minimum
+    });
+  } catch (error) {
+    console.error('Stock Report Error:', error);
+    return res.status(500).json({ error: 'Failed to generate stock report' });
   }
 };
