@@ -42,7 +42,7 @@ const app = express();
     app.use('/api/damages', require('./routes/damageRoutes'));
 
     // ✅ Sync Sequelize models
-    db.sequelize.sync({ force: false }).then(() => {
+    db.sequelize.sync({ force : false }).then(() => {
       console.log('Database synced successfully.');
     }).catch((err) => {
       console.error('DB sync error:', err);

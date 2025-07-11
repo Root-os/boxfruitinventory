@@ -144,5 +144,50 @@ router.post('/', purchaseController.makePurchase);
  *                 $ref: '#/components/schemas/Purchase'
  */
 router.get('/', purchaseController.getAllPurchases);
+/**
+ * @swagger
+ * /api/purchases/{id}:
+ *   put:
+ *     summary: Update a purchase by ID
+ *     tags: [Purchases]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the purchase to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Purchase'
+ *     responses:
+ *       200:
+ *         description: Purchase updated successfully
+ *       400:
+ *         description*/
+router.put('/:id', purchaseController.updatePurchase);
+/**
+ * @swagger
+ * /api/purchases/{id}:
+ *   delete:
+ *     summary: Delete a purchase by ID
+ *     tags: [Purchases]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the purchase to delete
+ *     responses:
+ *       200:
+ *         description: Purchase deleted successfully
+ *       404:
+ *         description: Purchase not found
+ */
+router.delete('/:id', purchaseController.deletePurcahse);
 
 module.exports = router;

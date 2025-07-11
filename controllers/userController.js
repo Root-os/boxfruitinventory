@@ -75,7 +75,7 @@ exports.loginUser = async (req, res) => {
     if (!isPasswordCorrect) return res.status(401).json({ message: 'Invalid credentials' });
     let shopId = null
     if (doesUserExist.role === 'salesman') {
-        shopId = await Shop.findOne({ where: { salesmanId: doesUserExist.id }, attributes: ['id'] });
+        shopId = await Shop.findOne({ where: { salesmanId: doesUserExist.id }, attributes: ['id', 'name'] });
     }
     const token = generateToken({ id: doesUserExist.id, role: doesUserExist.role, fullName : doesUserExist.fullName,shopId });
     res.json({ 

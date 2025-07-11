@@ -16,7 +16,7 @@ exports.makePurchase = async (req, res) => {
      *     } 
      * ]
      */
-    const { customerId, items, unit, cost, description, totalPrice } = req.body;
+    const { customerId, items, unit, cost, description, customerName } = req.body;
     let counter = 0;
     let totalPriceComputed = 0
     for (const item in items) {
@@ -33,7 +33,8 @@ exports.makePurchase = async (req, res) => {
       counter += 1
     }
      let newPurchase = await Purchase.create({
-      customerId,
+       customerId,
+       customerName,
       items,
       quantity : counter,
       unit,
@@ -59,35 +60,62 @@ exports.makePurchase = async (req, res) => {
 exports.updatePurchase = async (req, res) => {
   const id = req.params.id
   
-  const doesPurchaseExist = await Purchase.findOne({
+  const doesPurchaseExist = await Purchase.findByPk(id)
+  if (!doesPurchaseExist) {
+    return res.status(500).json({ error : "Purchase doesn't exist!"})
+  }
+  const [updatedCount] = await Purchase.update(req.body, {
+    where: { id }
+  });
+  
+  if (updatedCount === 0) {
+    return res.status(404).json({ error: "Purchase not updated — maybe it doesn't exist or nothing changed." });
+  }
+  
+  const updatedPurchase = await Purchase.findByPk(id, {
+    include: [
+      { model: Customer, attributes: ['id', 'name', 'phone'] },
+    ]
+  });
+
+  const enrichedItems = await Promise.all(
+    JSON.parse(updatedPurchase.items || '[]').map(async (item) => {
+      const itemDetails = await Item.findByPk(item.itemId, {
+        attributes: ['id', 'name', 'unit'],
+      });
+  
+      return {
+        ...item,
+        name: itemDetails?.name || null,
+        unit: itemDetails?.unit || null,
+      };
+    })
+  );
+  
+  updatedPurchase.items = enrichedItems
+  
+  res.status(200).json({
+    message: 'Purchase updated successfully!',
+    purchase: updatedPurchase,
+  });
+  
+}
+exports.deletePurcahse = async (req, res) => {
+  const id = req.params.id
+  const deletePurchase = await Purchase.destroy({
     where: {
       id : id
     }
   })
-  if (!doesPurchaseExist) {
-    return res.status(500).json({ error : "Purchase doesn't exist!"})
-  }
-  const updatedPurchase = await Purchase.updateOne(req.body, {
-    where: {
-      id : id
-    },
-    include: [
-      { model: Customer, attributes: ['id', 'name', 'phone'] },
-      { model: Item, attributes: ['id', 'name', 'price', 'unit'] },
-    ]
-  })
   res.status(201).json({
-    message: 'Purchase updated successfully!',
-    purchase: updatedPurchase,
+    message: 'Purchase deleted successfully!',
+    purchase: deletePurchase,
   });
 }
 
 exports.getAllPurchases = async (req, res) => {
   try {
     const purchases = await Purchase.findAll({
-      include: [
-        { model: Customer, attributes: ['id', 'name'] },
-      ],
       order: [['purchaseDate', 'DESC']],
     });
     

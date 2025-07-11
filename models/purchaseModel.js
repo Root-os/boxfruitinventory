@@ -17,6 +17,10 @@ module.exports = (sequelize) => {
       onDelete: 'SET NULL',
       onUpdate: 'CASCADE',
     },
+    customerName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     items: {
       type: DataTypes.JSON, // ✅ JSON okay in MySQL
       allowNull: false,
@@ -50,10 +54,6 @@ module.exports = (sequelize) => {
     },
     totalPrice: {
       type: DataTypes.FLOAT,
-      allowNull: false,
-    },
-    unit: {
-      type: DataTypes.STRING,
       allowNull: false,
     },
     cost: {

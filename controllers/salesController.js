@@ -2,7 +2,7 @@ const { Sales, Customer, Item, Shop, User, ShopInventory } = require('../models'
 
 exports.createSale = async (req, res) => {
   try {
-    const { customerId, items, unpaid, shopId, userId } = req.body;
+    const { customerId, items, unpaid, shopId, userId, customerName } = req.body;
 
     let totalPrice = 0;
     let totalItems = 0;
@@ -33,6 +33,7 @@ exports.createSale = async (req, res) => {
       items,
       quantity : totalItems,
       price: totalPrice,
+      customerName,
       unpaid,
       shopId,
       userId,
