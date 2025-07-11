@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Sales, Customer, Item, Shop, User, ShopInventory } = require('../models');
 
 exports.createSale = async (req, res) => {
@@ -165,5 +166,91 @@ exports.deleteSale = async (req, res) => {
     res.json({ message: 'Sale deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+exports.salesReport = async (req, res) => {
+  const { itemId, startDate, endDate, groupBy } = req.body;
+
+  try {
+    const where = {};
+
+    // === Filter by date ===
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt = {
+        [Op.between]: [start, end],
+      };
+    }
+
+    const allSales = await Sales.findAll({ where });
+
+    const summary = {};
+
+    for (const sale of allSales) {
+      let parsedItems;
+      try {
+        parsedItems = Array.isArray(sale.items) ? sale.items : JSON.parse(sale.items || '[]');
+      } catch {
+        parsedItems = [];
+      }
+
+      // === Skip if itemId filter is active and doesn't exist in this sale ===
+      if (itemId && !parsedItems.some(i => i.itemId === parseInt(itemId))) continue;
+
+      const groupKey = (() => {
+        switch (groupBy) {
+          case 'shop': return sale.shopId;
+          case 'user': return sale.userId;
+          case 'item': return parsedItems.map(i => i.itemId).join(',');
+          default: return 'total';
+        }
+      })();
+
+      if (!summary[groupKey]) {
+        summary[groupKey] = {
+          totalSales: 0,
+          totalQuantity: 0,
+          totalUnpaid: 0,
+          itemsSold: [],
+        };
+      }
+
+      summary[groupKey].totalSales += sale.price;
+      summary[groupKey].totalQuantity += sale.quantity;
+      summary[groupKey].totalUnpaid += sale.unpaid;
+
+      summary[groupKey].itemsSold.push(...parsedItems);
+    }
+
+    // === Enrich all itemIds with name/unit in one query ===
+    const allItemIds = [
+      ...new Set(Object.values(summary).flatMap(s => s.itemsSold.map(i => i.itemId)))
+    ];
+
+    const itemsFromDb = await Item.findAll({
+      where: { id: allItemIds },
+      attributes: ['id', 'name', 'unit'],
+    });
+
+    const itemMap = {};
+    itemsFromDb.forEach(item => {
+      itemMap[item.id] = { name: item.name, unit: item.unit };
+    });
+
+    // === Replace plain items with enriched info ===
+    for (const groupKey in summary) {
+      summary[groupKey].itemsSold = summary[groupKey].itemsSold.map(item => ({
+        ...item,
+        name: itemMap[item.itemId]?.name || null,
+        unit: itemMap[item.itemId]?.unit || null,
+      }));
+    }
+
+    return res.status(200).json(summary);
+  } catch (error) {
+    console.error('Sales Report Error:', error);
+    return res.status(500).json({ error: 'Failed to generate sales report' });
   }
 };

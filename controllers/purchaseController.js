@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Purchase, Customer, Item } = require('../models');
 
 exports.makePurchase = async (req, res) => {
@@ -16,7 +17,7 @@ exports.makePurchase = async (req, res) => {
      *     } 
      * ]
      */
-    const { customerId, items, unit, cost, description, customerName } = req.body;
+    const { customerId, items, unit, cost, description, customerName,purchaseDate } = req.body;
     let counter = 0;
     let totalPriceComputed = 0
     for (const item in items) {
@@ -41,7 +42,7 @@ exports.makePurchase = async (req, res) => {
       cost,
       description,
       totalPrice : totalPriceComputed,
-      purchaseDate: new Date(),
+      purchaseDate: purchaseDate || new Date(),
     });
 
     res.status(201).json({
@@ -78,6 +79,7 @@ exports.updatePurchase = async (req, res) => {
     ]
   });
 
+  
   const enrichedItems = await Promise.all(
     JSON.parse(updatedPurchase.items || '[]').map(async (item) => {
       const itemDetails = await Item.findByPk(item.itemId, {
@@ -152,3 +154,18 @@ exports.getAllPurchases = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+exports.purchaseReport = async (req, res) => {
+  const { startDate, endDate } = req.body;
+  try {
+    const purchases = await Purchase.findAll({
+      where: {
+        purchaseDate: {
+          [Op.between]: [new Date(startDate), new Date(endDate)],
+        },
+      },
+    });
+    res.json(purchases);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}

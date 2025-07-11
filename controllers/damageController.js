@@ -22,3 +22,12 @@ exports.createDamage = async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 }
+exports.getDamgeByShopId = async (req, res) => {
+    try {
+        const { shopId } = req.params
+        const findAllDamagesPerShop = await Damage.findAll({ where: { shopId } })
+        res.status(200).json(findAllDamagesPerShop)
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+}

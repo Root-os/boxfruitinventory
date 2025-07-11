@@ -40,6 +40,7 @@ const app = express();
     app.use('/api/expenses', require('./routes/expenseRoutes'));
     app.use('/api/sales', require('./routes/salesRoutes'));
     app.use('/api/damages', require('./routes/damageRoutes'));
+    app.use('/api/reports', require('./routes/reportRotues'));
 
     // ✅ Sync Sequelize models
     db.sequelize.sync({ force : false }).then(() => {

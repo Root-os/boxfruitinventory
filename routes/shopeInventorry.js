@@ -209,4 +209,6 @@ shopInventoryRoutes.get('/shop/count/:shopId', controller.getStockByShop);
  */
 shopInventoryRoutes.post('/transfer', controller.transferToShop); 
 
+shopInventoryRoutes.get('/report', controller.stockReport)
+
 module.exports = shopInventoryRoutes;
