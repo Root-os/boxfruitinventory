@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Purchase, Customer, Item } = require('../models');
+const { Purchase, Customer, Item, User } = require('../models');
 
 exports.makePurchase = async (req, res) => {
   try {
@@ -17,7 +17,7 @@ exports.makePurchase = async (req, res) => {
      *     } 
      * ]
      */
-    const { customerId, items, unit, cost, description, customerName,purchaseDate } = req.body;
+    const { customerId, items, unit, cost, description, customerName,purchaseDate,userId, paid, unpaid } = req.body;
     let counter = 0;
     let totalPriceComputed = 0
     for (const item in items) {
@@ -43,16 +43,15 @@ exports.makePurchase = async (req, res) => {
       description,
       totalPrice : totalPriceComputed,
       purchaseDate: purchaseDate || new Date(),
+      userId,
+      paid,
+      unpaid,
     });
 
     res.status(201).json({
       message: 'Purchase created successfully!',
       purchase: newPurchase,
     });
-
-    
-
-   
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -65,10 +64,11 @@ exports.updatePurchase = async (req, res) => {
   if (!doesPurchaseExist) {
     return res.status(500).json({ error : "Purchase doesn't exist!"})
   }
+
   const [updatedCount] = await Purchase.update(req.body, {
     where: { id }
   });
-  
+
   if (updatedCount === 0) {
     return res.status(404).json({ error: "Purchase not updated — maybe it doesn't exist or nothing changed." });
   }
@@ -123,6 +123,12 @@ exports.getAllPurchases = async (req, res) => {
         {
           model: Customer,
           attributes: ['id', 'name'], 
+        }
+      ],
+        include: [
+        {
+          model: User,
+          attributes: ['id', 'fullName'], 
         }
       ]
     });

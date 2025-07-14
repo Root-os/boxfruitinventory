@@ -7,6 +7,14 @@ module.exports = (sequelize) => {
       autoIncrement: true,
       primaryKey: true,
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users', 
+        key: 'id',
+      }
+    },
     customerId: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -68,6 +76,14 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
+    },
+    paid: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    unpaid: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
   });
 

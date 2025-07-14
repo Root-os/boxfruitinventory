@@ -21,6 +21,7 @@ exports.getCounts = async (req, res) => {
       shopsCount,
       itemsCount,
       damagesCount,
+      salesCount
     ] = await Promise.all([
       Purchase.count({ where: dateFilter }),
       User.count({ where: dateFilter }),
@@ -29,6 +30,7 @@ exports.getCounts = async (req, res) => {
       Shop.count({ where: dateFilter }),
       Item.count({ where: dateFilter }),
       Damage.count({ where: dateFilter }),
+      Sales.count({ where: dateFilter }),
     ]);
 
     res.status(200).json({
@@ -39,6 +41,7 @@ exports.getCounts = async (req, res) => {
       shops: shopsCount,
       items: itemsCount,
       damages: damagesCount,
+      salesCount: salesCount
     });
   } catch (error) {
     console.error('Error fetching counts:', error);

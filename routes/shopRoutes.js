@@ -175,5 +175,5 @@ router.put('/:id', shopController.updateShop);
 router.delete('/:id', shopController.deleteShop);
 
 router.get('/user/:id', shopController.getShopsByOwnerId);
-router.get('/report/shop-report', shopController.profitLossReport);
+router.post('/report/shop-report', shopController.profitLossReport);
 module.exports = router;

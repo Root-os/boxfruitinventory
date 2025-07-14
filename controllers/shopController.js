@@ -69,8 +69,9 @@ exports.getShopsByOwnerId = async (req, res) => {
     
   }
 };
+
 exports.profitLossReport = async (req, res) => {
-  const { startDate, endDate, groupBy } = req.query;
+  const { startDate, endDate } = req.query;
 
   try {
     const where = {};
@@ -82,14 +83,19 @@ exports.profitLossReport = async (req, res) => {
 
     const sales = await Sales.findAll({ where });
 
-    const report = {};
+    const shopsReport = {};
+    const totals = {
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+    };
 
     for (const sale of sales) {
+      const shop = await Shop.findByPk(sale.shopId);
       const parsedItems = JSON.parse(sale.items || '[]');
 
       for (const item of parsedItems) {
         const itemDetails = await Item.findByPk(item.itemId);
-
         if (!itemDetails) continue;
 
         const costPrice = itemDetails.price;
@@ -97,12 +103,17 @@ exports.profitLossReport = async (req, res) => {
         const itemCost = costPrice * item.quantity;
         const profit = saleRevenue - itemCost;
 
-        let groupKey = 'company';
-        if (groupBy === 'shop') groupKey = sale.shopId;
-        else if (groupBy === 'item') groupKey = item.itemId;
+        // Add to global totals
+        totals.revenue += saleRevenue;
+        totals.cost += itemCost;
+        totals.profit += profit;
 
-        if (!report[groupKey]) {
-          report[groupKey] = {
+        const shopKey = sale.shopId;
+
+        if (!shopsReport[shopKey]) {
+          shopsReport[shopKey] = {
+            shopId: sale.shopId,
+            shopName: shop ? shop.name : null,
             revenue: 0,
             cost: 0,
             profit: 0,
@@ -110,11 +121,11 @@ exports.profitLossReport = async (req, res) => {
           };
         }
 
-        report[groupKey].revenue += saleRevenue;
-        report[groupKey].cost += itemCost;
-        report[groupKey].profit += profit;
+        shopsReport[shopKey].revenue += saleRevenue;
+        shopsReport[shopKey].cost += itemCost;
+        shopsReport[shopKey].profit += profit;
 
-        const existingItem = report[groupKey].items.find(i => i.itemId === item.itemId);
+        const existingItem = shopsReport[shopKey].items.find(i => i.itemId === item.itemId);
 
         if (existingItem) {
           existingItem.quantity += item.quantity;
@@ -122,7 +133,7 @@ exports.profitLossReport = async (req, res) => {
           existingItem.cost += itemCost;
           existingItem.profit += profit;
         } else {
-          report[groupKey].items.push({
+          shopsReport[shopKey].items.push({
             itemId: item.itemId,
             itemName: itemDetails.name,
             quantity: item.quantity,
@@ -134,12 +145,14 @@ exports.profitLossReport = async (req, res) => {
       }
     }
 
-    res.status(200).json(report);
+    // Final response
+    res.status(200).json({
+      totals,
+      shops: shopsReport,
+    });
+
   } catch (error) {
     console.error('Profit & Loss Report Error:', error);
     res.status(500).json({ error: 'Failed to generate profit & loss report' });
   }
 };
-
-
-

@@ -168,7 +168,7 @@ router.get('/', purchaseController.getAllPurchases);
  *         description: Purchase updated successfully
  *       400:
  *         description*/
-router.put('/:id', purchaseController.updatePurchase);
+router.patch('/:id', purchaseController.updatePurchase);
 /**
  * @swagger
  * /api/purchases/{id}:
@@ -190,6 +190,6 @@ router.put('/:id', purchaseController.updatePurchase);
  */
 router.delete('/:id', purchaseController.deletePurcahse);
 
-router.get('/report', purchaseController.purchaseReport)
+router.post('/report', purchaseController.purchaseReport)
 
 module.exports = router;

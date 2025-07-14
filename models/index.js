@@ -30,15 +30,24 @@ if (db.Customer && db.Item && db.Purchase) {
   // db.Purchase.belongsTo(db.Item, { foreignKey: 'itemId' });
 }
 
+if (db.Pricing && db.Shop && db.Item) {
+  db.Shop.hasMany(db.Pricing, { foreignKey: "shopId" });
+  db.Pricing.belongsTo(db.Shop, { foreignKey: "shopId" });
+
+  db.Item.hasMany(db.Pricing, { foreignKey: "itemId" });
+  db.Pricing.belongsTo(db.Item, { foreignKey: "itemId" });
+}
+
+
 if (db.Shop && db.ShopInventory) {
   db.Shop.hasMany(db.ShopInventory, { foreignKey: 'shopId' });
   db.ShopInventory.belongsTo(db.Shop, { foreignKey: 'shopId' });
 }
 
-// if (db.Purchase && db.ShopInventory) {
-//   db.Purchase.hasMany(db.ShopInventory, { foreignKey: 'purchaseId' });
-//   db.ShopInventory.belongsTo(db.Purchase, { foreignKey: 'purchaseId' });
-// }
+if (db.Purchase && db.User) {
+  db.User.hasMany(db.Purchase, { foreignKey: 'userId' });
+  db.Purchase.belongsTo(db.User, { foreignKey: 'userId' });
+}
 
 if (db.Item && db.ShopInventory) {
   db.Item.hasMany(db.ShopInventory, { foreignKey: 'itemId' });

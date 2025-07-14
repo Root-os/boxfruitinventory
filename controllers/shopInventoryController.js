@@ -146,8 +146,6 @@ exports.delete = async (req, res) => {
   }
 };
 
-
-
 exports.stockReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
