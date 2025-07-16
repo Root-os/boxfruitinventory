@@ -192,4 +192,5 @@ router.delete('/:id', purchaseController.deletePurcahse);
 
 router.post('/report', purchaseController.purchaseReport)
 
+
 module.exports = router;

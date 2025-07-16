@@ -38,6 +38,18 @@ if (db.Pricing && db.Shop && db.Item) {
   db.Pricing.belongsTo(db.Item, { foreignKey: "itemId" });
 }
 
+if (db.InventoryTransfer && db.Shop && db.Item) {
+  // From and To shops (2 associations to the same model)
+ db.Shop.hasMany(db.InventoryTransfer, { foreignKey: "fromShopId", as: "TransfersFrom" });
+db.Shop.hasMany(db.InventoryTransfer, { foreignKey: "toShopId", as: "TransfersTo" });
+
+db.InventoryTransfer.belongsTo(db.Shop, { foreignKey: "fromShopId", as: "FromShop" });
+db.InventoryTransfer.belongsTo(db.Shop, { foreignKey: "toShopId", as: "ToShop" });
+  // Item association
+  db.Item.hasMany(db.InventoryTransfer, { foreignKey: "itemId" });
+  db.InventoryTransfer.belongsTo(db.Item, { foreignKey: "itemId" });
+}
+
 
 if (db.Shop && db.ShopInventory) {
   db.Shop.hasMany(db.ShopInventory, { foreignKey: 'shopId' });

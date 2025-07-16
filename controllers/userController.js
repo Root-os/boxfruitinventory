@@ -40,17 +40,16 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { username, password, role, fullName } = req.body;
+        const hashedPassword = await hashPassword(password);
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    await user.update({ username, password, role, fullName });
+    await user.update({ username, hashedPassword, role, fullName });
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
-
 
 // Delete user
 exports.deleteUser = async (req, res) => {

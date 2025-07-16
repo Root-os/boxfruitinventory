@@ -19,7 +19,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'Customers', // foreign key to customer is fine
+        model: 'Customers', 
         key: 'id',
       },
       onDelete: 'SET NULL',
@@ -30,7 +30,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     items: {
-      type: DataTypes.JSON, // ✅ JSON okay in MySQL
+      type: DataTypes.JSON, 
       allowNull: false,
       validate: {
         isValidItemArray(value) {

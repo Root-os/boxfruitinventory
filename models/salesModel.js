@@ -21,7 +21,7 @@ module.exports = (sequlize, DataTypes) => {
             throw new Error('itemId must be an array of objects');
           }
           for (const item of value) {
-            if (typeof item !== 'object' || typeof item.itemId !== 'number' || typeof item.quantity !== 'number' || typeof item.price !== 'number') {
+            if (typeof item !== 'object' || typeof item.itemId !== 'number' || typeof item.quantity !== 'number' || typeof item.price !== 'number' || typeof item.unit !== 'string' ) {
               throw new Error(
                 'Each item must have a number "itemId" and a number "quantity"'
               );

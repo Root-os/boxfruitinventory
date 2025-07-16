@@ -5,12 +5,31 @@ const {Shop, Item} = require('../models');
 exports.create = async (req, res) => {
   try {
     const { shopId, itemId, unit, price } = req.body;
+
+    // Check if this combination already exists
+    const existing = await Pricing.findOne({
+      where: {
+        shopId,
+        itemId,
+        unit
+      }
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error: 'Pricing for this item, shop, and unit already exists.'
+      });
+    }
+
+    // If not exists, create it
     const pricing = await Pricing.create({ shopId, itemId, unit, price });
     res.status(201).json(pricing);
+
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 // Read all
 exports.findAll = async (req, res) => {

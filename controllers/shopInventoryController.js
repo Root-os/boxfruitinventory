@@ -1,23 +1,33 @@
-const { Op } = require('sequelize');
-const { ShopInventory, Purchase, Item, Shop } = require('../models');
+const { Op } = require("sequelize");
+const {
+  ShopInventory,
+  Purchase,
+  Item,
+  Shop,
+  InventoryTransfer,
+} = require("../models");
 
 exports.transferToShop = async (req, res) => {
   try {
     const { donatorShopId, recieverShopId, itemId, quantity } = req.body;
-    
+
     const doesDonaterShopExistInInventory = await ShopInventory.findOne({
       where: {
-        shopId : donatorShopId,
-        itemId
-      }
+        shopId: donatorShopId,
+        itemId,
+      },
     });
 
     if (!doesDonaterShopExistInInventory) {
-      return res.status(404).json({ message: 'Donator Shop inventory does not found' });
+      return res
+        .status(404)
+        .json({ message: "Donator Shop inventory does not found" });
     }
 
-    if(doesDonaterShopExistInInventory.quantity < quantity) {
-      return res.status(400).json({ message: 'Not enough stock in shop inventory' });
+    if (doesDonaterShopExistInInventory.quantity < quantity) {
+      return res
+        .status(400)
+        .json({ message: "Not enough stock in shop inventory" });
     }
 
     doesDonaterShopExistInInventory.quantity -= quantity;
@@ -25,24 +35,54 @@ exports.transferToShop = async (req, res) => {
 
     const doesRecevierShopExistInInventory = await ShopInventory.findOne({
       where: {
-        shopId : recieverShopId,
-        itemId
-      }
+        shopId: recieverShopId,
+        itemId,
+      },
     });
 
-    if(!doesRecevierShopExistInInventory) {
-      return res.status(404).json({ message: 'Receiver Shop inventory does not found' });
+    if (!doesRecevierShopExistInInventory) {
+      return res
+        .status(404)
+        .json({ message: "Receiver Shop inventory does not found" });
     }
 
     doesRecevierShopExistInInventory.quantity += quantity;
-    await doesRecevierShopExistInInventory.save();    
+    await doesRecevierShopExistInInventory.save();
 
-    res.status(201).json({ message: 'Transferred successfully', data : doesRecevierShopExistInInventory });
+    await InventoryTransfer.create({
+      fromShopId: donatorShopId,
+      toShopId: recieverShopId,
+      itemId,
+      quantity,
+      transferredAt: new Date(),
+    });
+
+    res
+      .status(201)
+      .json({
+        message: "Transferred successfully",
+        data: doesRecevierShopExistInInventory,
+      });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+exports.getAllTransfers = async (req, res) => {
+  try {
+    const transfers = await InventoryTransfer.findAll({
+      include: [
+        { model: Shop, as: "FromShop", attributes: ["id", "name"] },
+        { model: Shop, as: "ToShop", attributes: ["id", "name"] },
+        { model: Item, attributes: ["id", "name"] },
+      ],
+    });
+
+    res.status(200).json({ data: transfers });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.getStockByShop = async (req, res) => {
   try {
@@ -50,14 +90,17 @@ exports.getStockByShop = async (req, res) => {
 
     const stock = await ShopInventory.findAll({
       where: { shopId },
-      attributes: ['itemId', [sequelize.fn('SUM', sequelize.col('quantity')), 'total']],
-      group: ['itemId'],
+      attributes: [
+        "itemId",
+        [sequelize.fn("SUM", sequelize.col("quantity")), "total"],
+      ],
+      group: ["itemId"],
       include: [
         {
           model: Item,
-          attributes: ['name', 'id']
-        }
-      ]
+          attributes: ["name", "id"],
+        },
+      ],
     });
 
     res.json(stock);
@@ -66,21 +109,20 @@ exports.getStockByShop = async (req, res) => {
   }
 };
 
-
 exports.getAll = async (req, res) => {
   try {
     const records = await ShopInventory.findAll({
-      attributes: ['id', 'quantity'],
+      attributes: ["id", "quantity"],
       include: [
         {
           model: Shop,
-          attributes: ['id', 'name']
+          attributes: ["id", "name"],
         },
         {
           model: Item,
-          attributes: ['id', 'name']
-        }
-      ]
+          attributes: ["id", "name"],
+        },
+      ],
     });
 
     res.json(records);
@@ -88,7 +130,6 @@ exports.getAll = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.create = async (req, res) => {
   try {
@@ -97,34 +138,31 @@ exports.create = async (req, res) => {
     const doesItemExist = await ShopInventory.findOne({
       where: {
         itemId,
-        shopId
-      }
-    })
+        shopId,
+      },
+    });
     if (doesItemExist) {
       doesItemExist.quantity += quantity;
       await doesItemExist.save();
       res.status(201).json({
-        message: 'Purchase created! item quantity updated successfully!',
+        message: "Purchase created! item quantity updated successfully!",
         purchase: doesItemExist,
       });
-      
     } else {
       const record = await ShopInventory.create({ shopId, itemId, quantity });
       res.status(201).json(record);
     }
-    
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.getByShop = async (req, res) => {
   try {
     const { shopId } = req.params;
     const records = await ShopInventory.findAll({
       where: { shopId },
-      include: ['Purchase', 'Item']
+      include: ["Purchase", "Item"],
     });
     res.json(records);
   } catch (err) {
@@ -132,15 +170,14 @@ exports.getByShop = async (req, res) => {
   }
 };
 
-
 exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
     const record = await ShopInventory.findByPk(id);
-    if (!record) return res.status(404).json({ message: 'Not found' });
+    if (!record) return res.status(404).json({ message: "Not found" });
 
     await record.destroy();
-    res.json({ message: 'Deleted' });
+    res.json({ message: "Deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -159,11 +196,11 @@ exports.stockReport = async (req, res) => {
     }
 
     const inventories = await ShopInventory.findAll({
-      where : dateFilter,
+      where: dateFilter,
       include: [
         {
           model: Item,
-          attributes: ['name', 'unit'],
+          attributes: ["name", "unit"],
         },
       ],
     });
@@ -172,7 +209,13 @@ exports.stockReport = async (req, res) => {
     const lowStockAlerts = [];
 
     for (const inv of inventories) {
-      const { shopId, itemId, quantity, minStockQuantity, Item: itemDetails } = inv;
+      const {
+        shopId,
+        itemId,
+        quantity,
+        minStockQuantity,
+        Item: itemDetails,
+      } = inv;
 
       const itemName = itemDetails?.name || `Item #${itemId}`;
       const unit = itemDetails?.unit || null;
@@ -200,11 +243,11 @@ exports.stockReport = async (req, res) => {
     }
 
     return res.status(200).json({
-      currentStock,      // grouped by shopId
-      lowStockAlerts,    // flat list of items at or below minimum
+      currentStock, // grouped by shopId
+      lowStockAlerts, // flat list of items at or below minimum
     });
   } catch (error) {
-    console.error('Stock Report Error:', error);
-    return res.status(500).json({ error: 'Failed to generate stock report' });
+    console.error("Stock Report Error:", error);
+    return res.status(500).json({ error: "Failed to generate stock report" });
   }
 };

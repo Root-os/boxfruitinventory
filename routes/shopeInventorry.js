@@ -208,6 +208,7 @@ shopInventoryRoutes.get('/shop/count/:shopId', controller.getStockByShop);
  *         description: Invalid input or insufficient quantity
  */
 shopInventoryRoutes.post('/transfer', controller.transferToShop); 
+shopInventoryRoutes.get('/transfer', controller.getAllTransfers);
 
 shopInventoryRoutes.post('/report', controller.stockReport)
 
