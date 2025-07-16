@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Shop, User,Item ,Sales } = require('../models');;
 
 // Get all shops
@@ -70,89 +71,102 @@ exports.getShopsByOwnerId = async (req, res) => {
   }
 };
 
-exports.profitLossReport = async (req, res) => {
-  const { startDate, endDate } = req.query;
+exports.shopSalesReport = async (req, res) => {
+  const { startDate, endDate } = req.body;
 
   try {
     const where = {};
-    if (startDate && endDate) {
-      where.createdAt = {
-        [Op.between]: [new Date(startDate), new Date(endDate)]
-      };
-    }
+   if (startDate && endDate) {
+ const start = new Date(startDate);
+start.setHours(0, 0, 0, 0);
 
-    const sales = await Sales.findAll({ where });
+const end = new Date(endDate);
+end.setHours(23, 59, 59, 999);
 
-    const shopsReport = {};
+where.createdAt = {
+  [Op.between]: [start, end]
+};
+}
+    // Fetch all sales with related data
+    const sales = await Sales.findAll({
+      where,
+      include: [
+        { model: Shop, as: 'shop' },
+        // { model: Item, as: 'item'}
+  
+      ]
+    });
+
     const totals = {
-      revenue: 0,
-      cost: 0,
-      profit: 0,
+      totalSales: 0,
+      totalPaid: 0,
+      totalUnpaid: 0,
     };
 
+    const shopsReport = {};
+
     for (const sale of sales) {
-      const shop = await Shop.findByPk(sale.shopId);
-      const parsedItems = JSON.parse(sale.items || '[]');
+      const shopId = sale.shopId;
+      const shopName = sale.shop?.name || 'Unknown Shop';
+      const saleTotal = sale.price;
+      const unpaid = sale.unpaid || 0;
+      const paid = saleTotal - unpaid;
+
+      // Add to global totals
+      totals.totalSales += saleTotal;
+      totals.totalPaid += paid;
+      totals.totalUnpaid += unpaid;
+
+      // Init shop record
+      if (!shopsReport[shopId]) {
+        shopsReport[shopId] = {
+          shopId,
+          shopName,
+          totalSales: 0,
+          totalPaid: 0,
+          totalUnpaid: 0,
+          items: []
+        };
+      }
+
+      // Add to shop totals
+      shopsReport[shopId].totalSales += saleTotal;
+      shopsReport[shopId].totalPaid += paid;
+      shopsReport[shopId].totalUnpaid += unpaid;
+
+      // Process each item in the sale
+      const parsedItems = Array.isArray(sale.items)
+        ? sale.items
+        : JSON.parse(sale.items || '[]');
 
       for (const item of parsedItems) {
+        const existing = shopsReport[shopId].items.find(i => i.itemId === item.itemId);
         const itemDetails = await Item.findByPk(item.itemId);
-        if (!itemDetails) continue;
 
-        const costPrice = itemDetails.price;
-        const saleRevenue = item.price * item.quantity;
-        const itemCost = costPrice * item.quantity;
-        const profit = saleRevenue - itemCost;
-
-        // Add to global totals
-        totals.revenue += saleRevenue;
-        totals.cost += itemCost;
-        totals.profit += profit;
-
-        const shopKey = sale.shopId;
-
-        if (!shopsReport[shopKey]) {
-          shopsReport[shopKey] = {
-            shopId: sale.shopId,
-            shopName: shop ? shop.name : null,
-            revenue: 0,
-            cost: 0,
-            profit: 0,
-            items: [],
-          };
-        }
-
-        shopsReport[shopKey].revenue += saleRevenue;
-        shopsReport[shopKey].cost += itemCost;
-        shopsReport[shopKey].profit += profit;
-
-        const existingItem = shopsReport[shopKey].items.find(i => i.itemId === item.itemId);
-
-        if (existingItem) {
-          existingItem.quantity += item.quantity;
-          existingItem.revenue += saleRevenue;
-          existingItem.cost += itemCost;
-          existingItem.profit += profit;
+        if (existing) {
+          existing.quantity += item.quantity;
+          existing.totalPrice += item.price * item.quantity;
         } else {
-          shopsReport[shopKey].items.push({
+          shopsReport[shopId].items.push({
             itemId: item.itemId,
             itemName: itemDetails.name,
+            name: item.name,
+            unit: item.unit,
             quantity: item.quantity,
-            revenue: saleRevenue,
-            cost: itemCost,
-            profit,
+            totalPrice: item.price,
+            unitPrice:  item.price / item.quantity,
           });
         }
       }
     }
 
-    // Final response
     res.status(200).json({
       totals,
-      shops: shopsReport,
+      shops: shopsReport
     });
 
   } catch (error) {
-    console.error('Profit & Loss Report Error:', error);
-    res.status(500).json({ error: 'Failed to generate profit & loss report' });
+    console.error('Shop Sales Report Error:', error);
+    res.status(500).json({ error: 'Failed to generate shop sales report' });
   }
 };
