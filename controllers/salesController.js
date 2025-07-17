@@ -41,7 +41,7 @@ exports.createSale = async (req, res) => {
           .json({ message: "Not enough stock in shop inventory" });
       }
 
-      totalPrice += itemPrice * itemQty;
+      totalPrice += itemPrice;
       shopInventory.quantity -= itemQty;
       await shopInventory.save();
       totalItems += 1;

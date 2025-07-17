@@ -206,6 +206,11 @@ exports.purchaseReport = async (req, res) => {
           [Op.between]: [new Date(startDate), new Date(endDate)],
         },
       },
+          include: [
+        {
+          model: Customer,
+          attributes: ['id', 'name'], 
+        },]
     });
     res.json(purchases);
   } catch (err) {

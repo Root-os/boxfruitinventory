@@ -60,39 +60,26 @@ exports.getComparisonReport = async (req, res) => {
       end.setHours(23, 59, 59, 999);
       dateFilter = { createdAt: { [Op.between]: [start, end] } };
     }
-
-    
     const shops = await Shop.findAll();
-
     const shopComparison = await Promise.all(
       shops.map(async (shop) => {
         const shopSales = await Sales.findAll({
           where: { shopId: shop.id, ...dateFilter }
         });
-
         const totalSales = shopSales.reduce((sum, s) => sum + s.price, 0);
-
-        const purchases = await Purchase.findAll({
-          where: {
-            description: { [Op.like]: `%${shop.name}%` },
-            ...dateFilter,
-          },
-        });
-
-        const totalCost = purchases.reduce((sum, p) => sum + p.cost, 0);
+        const totalUnpaids = shopSales.reduce((sum, s) => sum + s.unpaid, 0 )
+        const totalPaids = totalSales - totalUnpaids;
 
         return {
           shopName: shop.name,
           totalSales,
-          totalCost,
-          profit: totalSales - totalCost,
+          totalPaids,
+          totalUnpaids
         };
       })
     );
 
-    
     const salesmen = await User.findAll();
-
     const salesmanComparison = await Promise.all(
       salesmen.map(async (user) => {
         const shops = await Shop.findAll({ where: { salesmanId: user.id } });
@@ -111,7 +98,7 @@ exports.getComparisonReport = async (req, res) => {
         const totalRevenue = sales.reduce((sum, s) => sum + s.price, 0);
 
         return {
-          name: user.name || `Salesman #${user.id}`,
+          name: user.fullName || `Salesman #${user.id}`,
           totalSales,
           totalRevenue,
           avgSale: totalSales > 0 ? totalRevenue / totalSales : 0,
@@ -180,4 +167,70 @@ exports.getComparisonReport = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+exports.getOverallReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+
+    let dateFilter = {};
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // include full end day
+      dateFilter = { createdAt: { [Op.between]: [start, end] } };
+    }
+
+    const sales = await Sales.findAll({ where: dateFilter });
+    const purchases = await Purchase.findAll({ where: dateFilter });
+
+    let totalSales = 0;
+    let totalSalesUnpaid = 0;
+
+    let totalPurchase = 0;
+    let totalPurchasePaid = 0;
+    let totalPurchaseUnpaid = 0;
+
+    
+    for (const sale of sales) {
+      totalSales += sale.price || 0;
+      totalSalesUnpaid += sale.unpaid || 0;
+    }
+
+    const totalSalesPaid = totalSales - totalSalesUnpaid;
+
+
+    for (const purchase of purchases) {
+      const fullCost = (purchase.totalPrice || 0) + (purchase.cost || 0);
+      totalPurchase += fullCost;
+      totalPurchasePaid += purchase.paid || 0;
+      totalPurchaseUnpaid += purchase.unpaid || 0;
+    }
+
+    const profit = totalSales - totalPurchase;
+
+    return res.status(200).json({
+      sales: {
+        total: totalSales,
+        paid: totalSalesPaid,
+        unpaid: totalSalesUnpaid,
+      },
+      purchases: {
+        total: totalPurchase,
+        paid: totalPurchasePaid,
+        unpaid: totalPurchaseUnpaid,
+      },
+      profit,
+    });
+
+  } catch (error) {
+    console.error('Error generating overall report:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
+
+
 
