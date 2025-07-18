@@ -9,45 +9,48 @@ exports.makePurchase = async (req, res) => {
       cost,
       description,
       customerName,
-      purchaseDate,
       userId,
       paid,
-      unpaid
     } = req.body;
 
     let counter = 0;
     let totalPriceComputed = 0;
+    let totalUnpaids = 0;
+    
 
     // Validate and update inventory for each item
     for (const item of items) {
       const { itemId, quantity, price, unit } = item;
+      
 
       const doesItemExist = await Item.findByPk(itemId);
       if (!doesItemExist) {
         return res.status(500).json({ error: "Item doesn't exist!" });
       }
-
+    
       doesItemExist.quantity += quantity;
       doesItemExist.price = price;
       await doesItemExist.save();
 
       totalPriceComputed += price * quantity;
       counter += 1;
+      
+      totalUnpaids = totalPriceComputed - paid;
+
     }
 
     // Save the purchase with full item info including unit
     const newPurchase = await Purchase.create({
       customerId,
       customerName,
-      items, // includes unit now
+      items, 
       quantity: counter,
       cost,
       description,
       totalPrice: totalPriceComputed,
-      purchaseDate: purchaseDate || new Date(),
       userId,
       paid,
-      unpaid,
+      unpaid: totalUnpaids,
     });
 
     res.status(201).json({
@@ -150,7 +153,6 @@ exports.deletePurcahse = async (req, res) => {
 exports.getAllPurchases = async (req, res) => {
   try {
     const purchases = await Purchase.findAll({
-      order: [['purchaseDate', 'DESC']],
        include: [
         {
           model: Customer,
@@ -162,17 +164,14 @@ exports.getAllPurchases = async (req, res) => {
         }
       ],
     });
-    
     const enrichedPurchases = await Promise.all(
       purchases.map(async (purchase) => {
         const parsedItems = JSON.parse(purchase.items || '[]');
-    
         const enrichedItems = await Promise.all(
           parsedItems.map(async (item) => {
             const itemDetails = await Item.findByPk(item.itemId, {
               attributes: ['id', 'name', 'unit'],
             });
-    
             return {
               ...item,
               name: itemDetails?.name || null,
@@ -180,17 +179,13 @@ exports.getAllPurchases = async (req, res) => {
             };
           })
         );
-
         const plainPurchase = purchase.get({plain : true})
-    
         return {
           ...plainPurchase,
           items: enrichedItems, 
         };
       })
     );
-  
-    
     res.json(enrichedPurchases);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -72,11 +72,6 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    purchaseDate: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
     paid: {
       type: DataTypes.INTEGER,
       allowNull: false,

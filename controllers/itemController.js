@@ -1,3 +1,4 @@
+const { Op, fn, col, where } = require("sequelize");
 const { Item } = require('../models');
 
 exports.getAllItems = async (req, res) => {
@@ -54,12 +55,30 @@ exports.deleteItem = async (req, res) => {
   }
 };
 
+
 exports.getItemByName = async (req, res) => {
   try {
     const { name } = req.query;
-    const item = await Item.findOne({ where: { name } });
-    res.json(item ? item : null);
+
+    if (!name) {
+      return res.status(400).json({ message: "Missing 'name' query param" });
+    }
+
+    const items = await Item.findAll({
+      where: where(
+        fn("LOWER", col("name")),
+        {
+          [Op.like]: `%${name.toLowerCase()}%`
+        }
+      )
+    });
+
+    if (!items || items.length === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    return res.json(items);
   } catch (error) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: error.message });
   }
-}
+};
