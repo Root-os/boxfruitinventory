@@ -1,3 +1,5 @@
+const { Sequelize } = require('sequelize');
+const sequelize = require('../config/database');
 const { Op } = require("sequelize");
 const {
   ShopInventory,
@@ -11,6 +13,7 @@ exports.transferToShop = async (req, res) => {
   try {
     const { donatorShopId, recieverShopId, itemId, quantity } = req.body;
 
+    // Check donor shop inventory
     const doesDonaterShopExistInInventory = await ShopInventory.findOne({
       where: {
         shopId: donatorShopId,
@@ -21,52 +24,70 @@ exports.transferToShop = async (req, res) => {
     if (!doesDonaterShopExistInInventory) {
       return res
         .status(404)
-        .json({ message: "Donator Shop inventory does not found" });
+        .json({ message: "Donator Shop inventory not found" });
     }
 
     if (doesDonaterShopExistInInventory.quantity < quantity) {
       return res
         .status(400)
-        .json({ message: "Not enough stock in shop inventory" });
+        .json({ message: "Not enough stock in donor shop" });
     }
 
+    // Decrease donor inventory
     doesDonaterShopExistInInventory.quantity -= quantity;
     await doesDonaterShopExistInInventory.save();
 
-    const doesRecevierShopExistInInventory = await ShopInventory.findOne({
+    // Increase or create receiver inventory
+    let doesRecevierShopExistInInventory = await ShopInventory.findOne({
       where: {
         shopId: recieverShopId,
         itemId,
       },
     });
 
-    if (!doesRecevierShopExistInInventory) {
-      return res
-        .status(404)
-        .json({ message: "Receiver Shop inventory does not found" });
+    if (doesRecevierShopExistInInventory) {
+      doesRecevierShopExistInInventory.quantity += quantity;
+      await doesRecevierShopExistInInventory.save();
+    } else {
+      doesRecevierShopExistInInventory = await ShopInventory.create({
+        shopId: recieverShopId,
+        itemId,
+        quantity,
+      });
     }
 
-    doesRecevierShopExistInInventory.quantity += quantity;
-    await doesRecevierShopExistInInventory.save();
-
-    await InventoryTransfer.create({
-      fromShopId: donatorShopId,
-      toShopId: recieverShopId,
-      itemId,
-      quantity,
-      transferredAt: new Date(),
+    // Check if a transfer already exists for the same donator, receiver, and item
+    const existingTransfer = await InventoryTransfer.findOne({
+      where: {
+        fromShopId: donatorShopId,
+        toShopId: recieverShopId,
+        itemId,
+      },
     });
 
-    res
-      .status(201)
-      .json({
-        message: "Transferred successfully",
-        data: doesRecevierShopExistInInventory,
+    if (existingTransfer) {
+      existingTransfer.quantity += quantity;
+      existingTransfer.transferredAt = new Date(); // optional: update timestamp
+      await existingTransfer.save();
+    } else {
+      await InventoryTransfer.create({
+        fromShopId: donatorShopId,
+        toShopId: recieverShopId,
+        itemId,
+        quantity,
+        transferredAt: new Date(),
       });
+    }
+
+    res.status(201).json({
+      message: "Transferred successfully",
+      data: doesRecevierShopExistInInventory,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.getAllTransfers = async (req, res) => {
   try {
@@ -134,25 +155,67 @@ exports.getAll = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     const { shopId, itemId, quantity } = req.body;
+    console.log('Request body:', { shopId, itemId, quantity });
 
-    const doesItemExist = await ShopInventory.findOne({
-      where: {
-        itemId,
-        shopId,
-      },
-    });
-    if (doesItemExist) {
-      doesItemExist.quantity += quantity;
-      await doesItemExist.save();
-      res.status(201).json({
-        message: "Purchase created! item quantity updated successfully!",
-        purchase: doesItemExist,
+    // Start a transaction to ensure atomicity
+    const transaction = await sequelize.transaction();
+    console.log('Transaction started');
+
+    try {
+      // Find the item in the Item table
+      const item = await Item.findByPk(itemId, { transaction });
+      console.log('Item fetched:', item ? item.toJSON() : null);
+      if (!item) {
+        await transaction.rollback();
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      // Check if sufficient quantity exists in Item table
+      if (item.quantity < quantity) {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'Insufficient item quantity' });
+      }
+
+      // Deduct quantity from Item table
+      item.quantity -= quantity;
+      await item.save({ transaction });
+      console.log('Item quantity updated:', item.toJSON());
+
+      // Check if item exists in ShopInventory
+      const doesItemExist = await ShopInventory.findOne({
+        where: {
+          itemId,
+          shopId,
+        },
+        transaction,
       });
-    } else {
-      const record = await ShopInventory.create({ shopId, itemId, quantity });
-      res.status(201).json(record);
+      console.log('ShopInventory fetched:', doesItemExist ? doesItemExist.toJSON() : null);
+
+      if (doesItemExist) {
+        doesItemExist.quantity = parseInt(doesItemExist.quantity) + parseInt(quantity);
+        await doesItemExist.save({ transaction });
+        console.log('ShopInventory updated:', doesItemExist.toJSON());
+        await transaction.commit();
+        res.status(201).json({
+          message: 'Purchase created! Item quantity updated successfully!',
+          purchase: doesItemExist,
+        });
+      } else {
+        const record = await ShopInventory.create(
+          { shopId, itemId, quantity },
+          { transaction }
+        );
+        console.log('ShopInventory created:', record.toJSON());
+        await transaction.commit();
+        res.status(201).json(record);
+      }
+    } catch (err) {
+      console.error('Transaction error:', err);
+      await transaction.rollback();
+      throw err;
     }
   } catch (err) {
+    console.error('Server error:', err);
     res.status(500).json({ error: err.message });
   }
 };

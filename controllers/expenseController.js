@@ -5,11 +5,21 @@ exports.createExpense = async (req, res) => {
   try {
     const { name, description, amount, date, shopId } = req.body;
 
-    
-    const shop = await Shop.findByPk(shopId);
-    if (!shop) return res.status(404).json({ message: 'Shop not found' });
+    // Only check for shop if shopId is provided
+    if (shopId) {
+      const shop = await Shop.findByPk(shopId);
+      if (!shop) {
+        return res.status(404).json({ message: 'Shop not found' });
+      }
+    }
 
-    const expense = await Expense.create({ name, description, amount, date, shopId });
+    const expense = await Expense.create({
+      name,
+      description,
+      amount,
+      date,
+      shopId: shopId || null, // optional: set null explicitly if not provided
+    });
 
     res.status(201).json({
       message: 'Expense created successfully',
@@ -22,6 +32,7 @@ exports.createExpense = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getAllExpenses = async (req, res) => {

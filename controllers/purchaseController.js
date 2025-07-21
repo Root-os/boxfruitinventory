@@ -197,7 +197,7 @@ exports.purchaseReport = async (req, res) => {
   try {
     const purchases = await Purchase.findAll({
       where: {
-        purchaseDate: {
+        createdAt: {
           [Op.between]: [new Date(startDate), new Date(endDate)],
         },
       },
@@ -207,6 +207,8 @@ exports.purchaseReport = async (req, res) => {
           attributes: ['id', 'name'], 
         },]
     });
+    console.log("purchaseReport controller hit");
+console.log("startDate:", startDate, "endDate:", endDate);
     res.json(purchases);
   } catch (err) {
     res.status(500).json({ error: err.message });

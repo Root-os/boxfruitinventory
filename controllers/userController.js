@@ -21,7 +21,7 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// Create new user
+
 // Create new user
 exports.createUser = async (req, res) => {
   try {
@@ -40,16 +40,30 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { username, password, role, fullName } = req.body;
-        const hashedPassword = await hashPassword(password);
+
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    await user.update({ username, hashedPassword, role, fullName });
-    res.json(user);
+    const updates = { username, role, fullName };
+
+    if (password) {
+      const hashedPassword = await hashPassword(password);
+      updates.password = hashedPassword;
+    }
+
+    await user.update(updates);
+
+    // Convert user to plain object and remove password
+    const updatedUser = user.toJSON();
+    delete updatedUser.password;
+
+    res.json(updatedUser); // Now password is excluded
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 // Delete user
 exports.deleteUser = async (req, res) => {
