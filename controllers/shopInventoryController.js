@@ -88,7 +88,6 @@ exports.transferToShop = async (req, res) => {
   }
 };
 
-
 exports.getAllTransfers = async (req, res) => {
   try {
     const transfers = await InventoryTransfer.findAll({
@@ -219,6 +218,66 @@ exports.create = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.updateShopInventory = async (req, res) => {
+  try {
+    const { shopId, itemId, quantity } = req.body; // new quantity
+    console.log('Update request:', { shopId, itemId, quantity });
+
+    const transaction = await sequelize.transaction();
+    console.log('Transaction started');
+
+    try {
+      const item = await Item.findByPk(itemId, { transaction });
+      if (!item) {
+        await transaction.rollback();
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      const inventory = await ShopInventory.findOne({
+        where: { shopId, itemId },
+        transaction,
+      });
+
+      if (!inventory) {
+        await transaction.rollback();
+        return res.status(404).json({ error: 'Shop inventory record not found' });
+      }
+
+      const oldQuantity = inventory.quantity;
+      const quantityDifference = quantity - oldQuantity;
+
+      // If increasing inventory, check if enough items available
+      if (quantityDifference > 0 && item.quantity < quantityDifference) {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'Insufficient item quantity to increase inventory' });
+      }
+
+      // Update item quantity accordingly
+      item.quantity -= quantityDifference; // can be negative if reducing shop inventory
+      await item.save({ transaction });
+
+      // Update shop inventory
+      inventory.quantity = quantity;
+      await inventory.save({ transaction });
+
+      await transaction.commit();
+      res.status(200).json({
+        message: 'Shop inventory updated successfully!',
+        shopInventory: inventory,
+      });
+
+    } catch (err) {
+      console.error('Transaction error:', err);
+      await transaction.rollback();
+      throw err;
+    }
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 exports.getByShop = async (req, res) => {
   try {

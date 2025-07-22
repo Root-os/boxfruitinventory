@@ -65,7 +65,8 @@ const controller = require('../controllers/shopInventoryController');
  *       400:
  *         description: Invalid input
  */
-shopInventoryRoutes.post('/', controller.create); 
+shopInventoryRoutes.post('/', controller.create);
+shopInventoryRoutes.put('/:id', controller.updateShopInventory); 
 
 /**
  * @swagger
