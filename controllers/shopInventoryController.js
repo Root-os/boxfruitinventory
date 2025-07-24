@@ -3,7 +3,6 @@ const sequelize = require('../config/database');
 const { Op } = require("sequelize");
 const {
   ShopInventory,
-  Purchase,
   Item,
   Shop,
   InventoryTransfer,
@@ -277,7 +276,6 @@ exports.updateShopInventory = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.getByShop = async (req, res) => {
   try {

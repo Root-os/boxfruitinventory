@@ -1,6 +1,7 @@
 const express = require('express');
 const shopInventoryRoutes = express.Router();
 const controller = require('../controllers/shopInventoryController');
+const transferController = require('../controllers/transferController');
 
 /**
  * @swagger
@@ -208,8 +209,12 @@ shopInventoryRoutes.get('/shop/count/:shopId', controller.getStockByShop);
  *       400:
  *         description: Invalid input or insufficient quantity
  */
-shopInventoryRoutes.post('/transfer', controller.transferToShop); 
-shopInventoryRoutes.get('/transfer', controller.getAllTransfers);
+//routes for transfering shop to shop
+shopInventoryRoutes.post('/transfer', transferController.transferToShop); 
+shopInventoryRoutes.get('/transfer', transferController.getAllTransfers);
+shopInventoryRoutes.put('/transfer/:id', transferController.updateTransfer);
+shopInventoryRoutes.delete('/transfer/:id', transferController.deleteTransfer);
+
 
 shopInventoryRoutes.post('/report', controller.stockReport)
 
