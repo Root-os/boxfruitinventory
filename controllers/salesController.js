@@ -1,4 +1,4 @@
-const { Op } = require("sequelize");
+const { Op, fn, col, literal } = require("sequelize");
 const {
   Sales,
   Customer,
@@ -6,11 +6,12 @@ const {
   Shop,
   User,
   ShopInventory,
+  PaymentMethod,
 } = require("../models");
 
 exports.createSale = async (req, res) => {
   try {
-    const { customerId, items, unpaid, shopId, userId, customerName } =
+    const { customerId, items, unpaid, shopId, userId, customerName, paymentMethodId } =
       req.body;
 
     let totalPrice = 0;
@@ -56,12 +57,14 @@ exports.createSale = async (req, res) => {
       unpaid,
       shopId,
       userId,
+      paymentMethodId,
     });
 
-    const [customer, shop, user] = await Promise.all([
+    const [customer, shop, user, paymentMethod] = await Promise.all([
       Customer.findByPk(customerId, { attributes: ["id", "name"] }),
       Shop.findByPk(shopId, { attributes: ["id", "name"] }),
       User.findByPk(userId, { attributes: ["id", "fullName", "username"] }),
+      PaymentMethod.findByPk(paymentMethodId, { attributes: ["id", "name"] }),
     ]);
 
     const enrichedItems = await Promise.all(
@@ -83,6 +86,7 @@ exports.createSale = async (req, res) => {
         customer,
         shop,
         user,
+        paymentMethod,
         quantity: sale.quantity,
         price: sale.price,
         unpaid: sale.unpaid,
@@ -103,6 +107,7 @@ exports.getAllSales = async (req, res) => {
         { model: Customer, as: "customer", attributes: ["id", "name"] },
         { model: Shop, as: "shop", attributes: ["id", "name"] },
         { model: User, as: "user", attributes: ["id", "fullName"] },
+        { model: PaymentMethod, as: "paymentMethod", attributes: ["id", "name"] },
       ],
       order: [["createdAt", "DESC"]],
     });
@@ -144,6 +149,7 @@ exports.getSaleById = async (req, res) => {
         { model: Item, as: "item" },
         { model: Shop, as: "shop" },
         { model: User, as: "user" },
+        { model: PaymentMethod, as: "paymentMethod" },
       ],
     });
 
@@ -368,5 +374,63 @@ exports.getSalesReportForSalesMan = async (req, res) => {
   } catch (error) {
     console.error("Sales Report Error:", error);
     return res.status(500).json({ error: "Failed to generate sales report" });
+  }
+};
+
+exports.getSalesByPaymentMethod = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    let start, end;
+
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+    } else if (startDate) {
+      start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(startDate);
+      end.setHours(23, 59, 59, 999);
+    } else if (endDate) {
+      start = new Date("1970-01-01"); 
+      end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      // default today
+      start = new Date();
+      start.setHours(0, 0, 0, 0);
+      end = new Date();
+      end.setHours(23, 59, 59, 999);
+    }
+
+    const sales = await Sales.findAll({
+      attributes: [
+        "paymentMethodId",
+        [fn("SUM", literal("price - unpaid")), "totalPaid"],
+      ],
+      include: [
+        {
+          model: PaymentMethod,
+          as: "paymentMethod",
+          attributes: ["id", "name"],
+        },
+      ],
+      where: {
+        createdAt: {
+          [Op.between]: [start, end],
+        },
+      },
+      group: ["paymentMethodId", "paymentMethod.id"],
+    });
+
+    res.json({
+      success: true,
+      data: sales,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
   }
 };

@@ -95,6 +95,10 @@ if (db.Damage && db.Item && db.Shop) {
   db.Shop.hasMany(db.Damage, { foreignKey: 'shopId' });
   db.Damage.belongsTo(db.Shop, { foreignKey: 'shopId', as: 'shop' });
 }
+if (db.PaymentMethod && db.Sales) {
+  db.PaymentMethod.hasMany(db.Sales, { foreignKey: 'paymentMethodId' });
+  db.Sales.belongsTo(db.PaymentMethod, { foreignKey: 'paymentMethodId', as: 'paymentMethod' });
+}
 
 
 

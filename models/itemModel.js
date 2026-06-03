@@ -31,7 +31,7 @@ module.exports = (sequelize) => {
       },
     },
     unit: {
-      type: DataTypes.STRING(50),  // e.g., "kg", "pcs", "liters"
+      type: DataTypes.STRING(50),  
       allowNull: false,
       defaultValue: "pcs",
     },
